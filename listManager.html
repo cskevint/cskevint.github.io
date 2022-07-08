@@ -1,0 +1,113 @@
+
+<html>
+<head>
+<title>List Manager</title>
+<script type="text/javascript" src="https://underscorejs.org/underscore-umd-min.js"></script>
+<style type="text/css">
+body, textarea {
+	font-family: Tahoma;
+	font-size: 12px;
+}
+div {
+	margin-bottom: 6px;
+}
+textarea {
+	margin: 2px;
+}
+textarea#data, textarea#extra {
+	width: 250px;
+	height: 250px;
+}
+label.extra {
+	color: red;
+}
+textarea#extra {
+	border: 1px solid red;
+}
+div#results {
+	border: 1px solid black;
+	display: none;
+	width: 250px;
+	padding: 2px;
+	margin: 6px 2px;
+}
+</style>
+<script type="text/javascript">
+	function isCaseSensitive() {
+		return document.getElementById('caseSensitive').checked;
+	}
+	function getData() {
+		const data = document.getElementById('data').value.split("\n").filter(d => d.length > 0);
+		return isCaseSensitive() ? data : data.map(d => d.toLowerCase());
+	}
+	function getExtra() {
+		const data = document.getElementById('extra').value.split("\n").filter(d => d.length > 0);
+		return isCaseSensitive() ? data : data.map(d => d.toLowerCase());
+	}
+	function writeResults(processed) {
+		const resultsEl = document.getElementById('results');
+		resultsEl.style.display = "block";
+		resultsEl.innerHTML = processed.join("<br/>");
+	}
+	function extraDataChange(event) {
+		document.getElementById('extra').disabled = !event.target.checked;
+		document.getElementById('unique').disabled = event.target.checked;
+		document.getElementById('duplicates').disabled = event.target.checked;
+		document.getElementById('union').disabled = !event.target.checked;
+		document.getElementById('intersection').disabled = !event.target.checked;
+		document.getElementById('difference').disabled = !event.target.checked;
+	}
+	function uniqueClick() {
+		writeResults(_.uniq(getData()));
+	}
+	function duplicatesClick() {
+		const counts = getData().reduce((h, k) => { h[k] = h[k] || 0; h[k]++; return h; }, {});
+		writeResults(_.pairs(counts).filter(d => d[1] > 1).map(d => `${d[0]} <b>(${d[1]})</b>`));
+	}
+	function unionClick() {
+		writeResults(_.union(getData(), getExtra()));
+	}
+	function intersectionClick() {
+		writeResults(_.intersection(getData(), getExtra()));
+	}
+	function differenceClick() {
+		writeResults(_.difference(getData(), getExtra()));
+	}
+	function clearClick() {
+		document.getElementById('extraData').checked = false;
+		document.getElementById('caseSensitive').checked = true;
+		extraDataChange({target:{checked:false}});
+		const resultsEl = document.getElementById('results');
+		resultsEl.style.display = "none";
+		['data','extra'].forEach(id => { document.getElementById(id).value = ""; })
+	}
+</script>
+</head>
+<body>
+<div>
+
+<div>Your data: </div>
+<div>
+<textarea id="data"></textarea>
+<textarea id="extra" disabled></textarea>
+</div>
+<div>
+<input id="extraData" type="checkbox" onChange="extraDataChange(event)">
+<label class="extra" for="extraData">Comparison Data</label>
+</div>
+<div>
+<input id="caseSensitive" type="checkbox" checked>
+<label for="caseSensitive">Case Sensitive</label>
+</div>
+</div>
+<div>
+<button id="unique" onClick="uniqueClick()">Unique</button>
+<button id="duplicates" onClick="duplicatesClick()">Duplicates</button>
+<button id="union" onClick="unionClick()" disabled>Union</button>
+<button id="intersection" onClick="intersectionClick()" disabled>Intersection</button>
+<button id="difference" onClick="differenceClick()" disabled>Difference</button>
+<button id="clear" onClick="clearClick()">Clear</button>
+</div>
+<div id="results"></div>
+</body>
+</html>
