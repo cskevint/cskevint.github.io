@@ -4,8 +4,20 @@
 	<title>List Manager</title>
 	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.css"
+		integrity="sha512-KXol4x3sVoO+8ZsWPFI/r5KBVB/ssCGB5tsv2nVOKwLg33wTFP3fmnXa47FdSVIshVTgsYk/1734xSk9aFIa4A=="
+		crossorigin="anonymous" referrerpolicy="no-referrer" />
+	<script src="https://code.jquery.com/jquery-3.1.1.min.js"
+		integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.js"
+		integrity="sha512-Xo0Jh8MsOn72LGV8kU5LsclG7SUzJsWGhXbWcYs2MAmChkQzwiW/yTQwdJ8w6UA9C6EVG18GHb/TrYpYCjyAQw=="
+		crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 	<script type="text/javascript" src="https://underscorejs.org/underscore-umd-min.js"></script>
 	<style type="text/css">
+		body {
+			padding: 12px;
+		}
+
 		body,
 		textarea {
 			font-family: Tahoma;
@@ -22,16 +34,20 @@
 
 		textarea#data,
 		textarea#extra {
-			width: 250px;
+			width: 350px;
 			height: 250px;
 		}
 
-		label.extra {
-			color: red;
+		.red label {
+			color: red !important;
 		}
 
 		textarea#extra {
 			border: 1px solid red;
+		}
+
+		textarea#extra[disabled] {
+			background-color: #dcdcdc;
 		}
 
 		div#results {
@@ -40,6 +56,19 @@
 			width: 250px;
 			padding: 2px;
 			margin: 6px 2px;
+		}
+
+		.checkbox label {
+			cursor: pointer !important;
+		}
+
+		[unselectable=on] {
+			-webkit-touch-callout: none;
+			-webkit-user-select: none;
+			-khtml-user-select: none;
+			-moz-user-select: none;
+			-ms-user-select: none;
+			user-select: none;
 		}
 	</style>
 	<script type="text/javascript">
@@ -61,11 +90,13 @@
 			const resultsEl = document.getElementById('results');
 			resultsEl.style.display = "block";
 			resultsEl.innerHTML = processed.map(o => htmlEntities(o)).join("<br/>");
+			document.getElementById('copyToClipboard').disabled = false;
 		}
 		function extraDataChange(event) {
 			document.getElementById('extra').disabled = !event.target.checked;
 			document.getElementById('unique').disabled = event.target.checked;
 			document.getElementById('duplicates').disabled = event.target.checked;
+			document.getElementById('reverse').disabled = event.target.checked;
 			document.getElementById('union').disabled = !event.target.checked;
 			document.getElementById('intersection').disabled = !event.target.checked;
 			document.getElementById('difference').disabled = !event.target.checked;
@@ -93,6 +124,7 @@
 			const resultsEl = document.getElementById('results');
 			resultsEl.style.display = "none";
 			['data', 'extra'].forEach(id => { document.getElementById(id).value = ""; })
+			document.getElementById('copyToClipboard').disabled = true;
 		}
 		function columnizeClick() {
 			const data = getData();
@@ -125,38 +157,44 @@
 
 <body>
 	<div>
-		<div>Your data: </div>
-		<div>
-			<textarea id="data"></textarea>
-			<textarea id="extra" disabled></textarea>
-		</div>
-		<div>
+		<form class="ui form">
+			<div class="field">
+				<label>Your data</label>
+				<textarea id="data"></textarea>
+				<textarea id="extra" disabled></textarea>
+			</div>
+		</form>
+		<div class="ui checkbox red">
 			<input id="extraData" type="checkbox" onChange="extraDataChange(event)">
-			<label class="extra" for="extraData">Comparison Data</label>
+			<label for="extraData" unselectable="on">Comparison Data</label>
 		</div>
-		<div>
+		<br />
+		<div class="ui checkbox">
 			<input id="caseSensitive" type="checkbox" checked>
-			<label for="caseSensitive">Case Sensitive</label>
+			<label for="caseSensitive" unselectable="on">Case Sensitive</label>
 		</div>
 	</div>
-	<div>
-		<button id="unique" onClick="uniqueClick()">Unique</button>
-		<button id="duplicates" onClick="duplicatesClick()">Duplicates</button>
-		<button id="union" onClick="unionClick()" disabled>Union</button>
-		<button id="intersection" onClick="intersectionClick()" disabled>Intersection</button>
-		<button id="difference" onClick="differenceClick()" disabled>Difference</button>
-		<button id="clear" onClick="clearClick()">Clear</button>
+	<div class="ui buttons" style="margin-bottom: 10px;">
+		<button id="unique" class="ui button" onClick="uniqueClick()">Unique</button>
+		<button id="duplicates" class="ui button" onClick="duplicatesClick()">Duplicates</button>
+		<button id="reverse" class="ui button" onClick="reverseClick()">Reverse</button>
+		<button id="union" class="ui button" onClick="unionClick()" disabled>Union</button>
+		<button id="intersection" class="ui button" onClick="intersectionClick()" disabled>Intersection</button>
+		<button id="difference" class="ui button" onClick="differenceClick()" disabled>Difference</button>
+		<button id="clear" class="ui primary button" onClick="clearClick()">Clear</button>
 	</div>
 	<div>
-		Divider: <select id="divider">
-			<option>|</option>
-			<option>,</option>
+		<div class="ui large label">Divider: </div>
+		<select id="divider" class="ui dropdown">
+			<option value="|">&nbsp;|&nbsp;</option>
+			<option value=",">&nbsp;,&nbsp;</option>
 		</select>
-		<button id="columnize" onClick="columnizeClick()">Columnize by 2</button>
-		<button id="reverse" onClick="reverseClick()">Reverse</button>
+		<div class="ui large label"> for </div>
+		<button id="columnize" class="ui button" onClick="columnizeClick()">Columnize by 2</button>
 	</div>
 	<div id="results"></div>
-	<button id="copyToClipboard" onClick="copyToClipboardClick()">Copy to Clipboard</button>
+	<button id="copyToClipboard" class="ui positive button" onClick="copyToClipboardClick()" disabled>Copy to
+		Clipboard</button>
 </body>
 
 </html>
