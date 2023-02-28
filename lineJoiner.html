@@ -1,35 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta name="description" content="Joins lines within a paragraph and keeps paragraphs separate." />
-    <meta charset="utf-8" />
-    <title>Line Joiner</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="author" content="Kevin Trotter" />
-    <script src="https://code.jquery.com/jquery-latest.min.js"></script>
-    <style>
-      #content {
-        width: 512px;
-        height: 384px;
-      }
-    </style>
-    <script>
-      function joinLines() {
-        var content = $("#content").val();
-        var joined = content.replace(/\n\n/ig, "A1B2C3D4E5");
-        joined = joined.replace(/\n/ig, " ");    
-        joined = joined.replace(/A1B2C3D4E5/ig, "\n\n");
-        $("#content").val(joined);
-      }
-    </script>
-  </head>
 
-  <body>
-    <div class="container">
-      <textarea id="content"></textarea>
-      <div>
-        <button onClick="joinLines()">Join</button>
-      </div>
+<head>
+  <meta name="description" content="Joins lines within a paragraph and keeps paragraphs separate." />
+  <meta charset="utf-8" />
+  <title>Line Joiner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="author" content="Kevin Trotter" />
+  <script src="https://code.jquery.com/jquery-latest.min.js"></script>
+  <style>
+    #content {
+      width: 512px;
+      height: 384px;
+    }
+
+  </style>
+  <script>
+    function joinLines() {
+      var content = $("#content").val();
+      var joined = content.replace(/\n\n/ig, "A1B2C3D4E5");
+      joined = joined.replace(/\n/ig, " ");
+      joined = joined.replace(/A1B2C3D4E5/ig, "\n\n");
+      $("#content").val(joined);
+    }
+    function copyToClipboardClick() {
+      var textToCopy = $("#content").val();
+      navigator.clipboard.writeText(textToCopy);
+      const copyToClipboardEl = document.getElementById('copyToClipboard');
+      const originalLabel = copyToClipboardEl.innerText;
+      copyToClipboardEl.disabled = true;
+      copyToClipboardEl.innerText = "Copied to Clipboard!"
+      setTimeout(() => {
+        copyToClipboardEl.disabled = false;
+        copyToClipboardEl.innerText = originalLabel;
+      }, 1000);
+    }
+  </script>
+</head>
+
+<body>
+  <div style="font-family: system-ui, sans-serif; margin-bottom:10px;">
+    <a href="listManager.html">List Manager</a> |
+    <a href="lineJoiner.html">Line Joiner</a> |
+    <a href="wordCount.html">Word Count</a>
+  </div>
+  <div class="container">
+    <textarea id="content"></textarea>
+    <div>
+      <button onClick="joinLines()">Join</button> |
+      <button id="copyToClipboard" onClick="copyToClipboardClick()">Copy to Clipboard</button>
     </div>
-  </body>
+  </div>
+</body>
+
 </html>
