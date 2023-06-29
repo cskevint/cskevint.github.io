@@ -78,6 +78,9 @@
 		function isCaseSensitive() {
 			return document.getElementById('caseSensitive').checked;
 		}
+		function showCounts() {
+			return document.getElementById('showCounts').checked;
+		}
 		function getData() {
 			const data = document.getElementById('data').value.split("\n").filter(d => d.length > 0);
 			return isCaseSensitive() ? data : data.map(d => d.toLowerCase());
@@ -86,10 +89,11 @@
 			const data = document.getElementById('extra').value.split("\n").filter(d => d.length > 0);
 			return isCaseSensitive() ? data : data.map(d => d.toLowerCase());
 		}
-		function writeResults(processed) {
+		function writeResults(processed, keepHTML) {
+			if (processed.length == 0) return;
 			const resultsEl = document.getElementById('results');
 			resultsEl.style.display = "block";
-			resultsEl.innerHTML = processed.map(o => htmlEntities(o)).join("<br/>");
+			resultsEl.innerHTML = keepHTML ? processed.join("<br/>") : processed.map(o => htmlEntities(o)).join("<br/>");
 			document.getElementById('copyToClipboard').disabled = false;
 		}
 		function extraDataChange(event) {
@@ -102,11 +106,12 @@
 			document.getElementById('difference').disabled = !event.target.checked;
 		}
 		function uniqueClick() {
-			writeResults(_.uniq(getData()));
+			const counts = getData().reduce((h, k) => { h[k] = h[k] || 0; h[k]++; return h; }, {});
+			writeResults(_.pairs(counts).map(d => `${d[0]}` + (d[1] > 1 && showCounts()? ` <b>(${d[1]})</b>` : '')), true);
 		}
 		function duplicatesClick() {
 			const counts = getData().reduce((h, k) => { h[k] = h[k] || 0; h[k]++; return h; }, {});
-			writeResults(_.pairs(counts).filter(d => d[1] > 1).map(d => `${d[0]} <b>(${d[1]})</b>`));
+			writeResults(_.pairs(counts).filter(d => d[1] > 1).map(d => `${d[0]}`+ (showCounts() ? ` <b>(${d[1]})</b>` : '')), true);
 		}
 		function unionClick() {
 			writeResults(_.union(getData(), getExtra()));
@@ -177,6 +182,11 @@
 		<div class="ui checkbox">
 			<input id="caseSensitive" type="checkbox" checked>
 			<label for="caseSensitive" unselectable="on">Case Sensitive</label>
+		</div>
+		<br />
+		<div class="ui checkbox">
+			<input id="showCounts" type="checkbox">
+			<label for="showCounts" unselectable="on">Show Counts for Duplicates</label>
 		</div>
 	</div>
 	<div class="ui buttons" style="margin-bottom: 10px;">
