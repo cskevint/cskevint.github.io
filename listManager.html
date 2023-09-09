@@ -34,8 +34,8 @@
 
 		textarea#data,
 		textarea#extra {
-			width: 350px;
-			height: 250px;
+			width: 450px;
+			height: 350px;
 		}
 
 		.red label {
@@ -97,6 +97,7 @@
 			document.getElementById('copyToClipboard').disabled = false;
 		}
 		function extraDataChange(event) {
+			document.getElementById('join').disabled = event.target.checked;
 			document.getElementById('extra').disabled = !event.target.checked;
 			document.getElementById('unique').disabled = event.target.checked;
 			document.getElementById('duplicates').disabled = event.target.checked;
@@ -104,6 +105,7 @@
 			document.getElementById('union').disabled = !event.target.checked;
 			document.getElementById('intersection').disabled = !event.target.checked;
 			document.getElementById('difference').disabled = !event.target.checked;
+			$('#data').css("width",event.target.checked?"":"600px");
 		}
 		function uniqueClick() {
 			const counts = getData().reduce((h, k) => { h[k] = h[k] || 0; h[k]++; return h; }, {});
@@ -130,6 +132,7 @@
 			resultsEl.style.display = "none";
 			['data', 'extra'].forEach(id => { document.getElementById(id).value = ""; })
 			document.getElementById('copyToClipboard').disabled = true;
+			updateWordCount();
 		}
 		function columnizeClick() {
 			const data = getData();
@@ -145,6 +148,22 @@
 		function reverseClick() {
 			writeResults(getData().reverse());
 		}
+	    function joinLines() {
+	      var content = document.getElementById("data").value;
+	      var joined = content.replace(/\n\n/ig, "A1B2C3D4E5");
+	      joined = joined.replace(/\n/ig, " ");
+	      joined = joined.replace(/A1B2C3D4E5/ig, "\n\n");
+	      document.getElementById("data").value = joined;
+		  navigator.clipboard.writeText(joined);
+		  const copyToClipboardEl = document.getElementById('copyToClipboard');
+		  const originalLabel = copyToClipboardEl.innerText;
+		  copyToClipboardEl.disabled = false;
+	   	  copyToClipboardEl.innerText = "Copied to Clipboard!"
+		  setTimeout(() => {
+			copyToClipboardEl.disabled = true;
+			copyToClipboardEl.innerText = originalLabel;
+		  }, 1000);
+	    }
 		function copyToClipboardClick() {
 			var textToCopy = document.getElementById("results").innerText;
 			navigator.clipboard.writeText(textToCopy);
@@ -157,21 +176,34 @@
 				copyToClipboardEl.innerText = originalLabel;
 			}, 1000);
 		}
+	    function updateWordCount() {
+	      var count = $('#data').val()
+	        .trim()
+	        .split(" ")
+	        .filter(function (word) { return word != '';})
+	        .length;
+	      $('#count').text(count);
+	    }
+	  	$(document).ready(function () {
+			$('#data').css("width","600px");
+	      updateWordCount();
+	      $('#data').keyup(function (event) {
+	        updateWordCount();
+	      });
+		});
 	</script>
 </head>
 
 <body>
-  <div style="font-family: system-ui, sans-serif; margin-bottom:10px;">
-    <a href="listManager.html">List Manager</a> |
-    <a href="lineJoiner.html">Line Joiner</a> |
-    <a href="wordCount.html">Word Count</a>
-  </div>	
 	<div>
 		<form class="ui form">
 			<div class="field">
 				<label>Your data</label>
 				<textarea id="data"></textarea>
 				<textarea id="extra" disabled></textarea>
+			</div>
+			<div>
+	          <b>Word count: <span id="count">0</span></b>
 			</div>
 		</form>
 		<div class="ui checkbox red">
@@ -190,6 +222,7 @@
 		</div>
 	</div>
 	<div class="ui buttons" style="margin-bottom: 10px;">
+		<button id="join" class="ui button" onClick="joinLines()">Join</button>
 		<button id="unique" class="ui button" onClick="uniqueClick()">Unique</button>
 		<button id="duplicates" class="ui button" onClick="duplicatesClick()">Duplicates</button>
 		<button id="reverse" class="ui button" onClick="reverseClick()">Reverse</button>
@@ -206,10 +239,10 @@
 		</select>
 		<div class="ui large label"> for </div>
 		<button id="columnize" class="ui button" onClick="columnizeClick()">Columnize by 2</button>
+		<button id="copyToClipboard" class="ui positive button" onClick="copyToClipboardClick()" disabled>Copy to
+			Clipboard</button>
 	</div>
 	<div id="results"></div>
-	<button id="copyToClipboard" class="ui positive button" onClick="copyToClipboardClick()" disabled>Copy to
-		Clipboard</button>
 </body>
 
 </html>
