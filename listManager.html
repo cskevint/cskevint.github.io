@@ -62,6 +62,11 @@
 			cursor: pointer !important;
 		}
 
+		#divider {
+			padding: 10px;
+			border-radius: 6px;
+		}
+
 		[unselectable=on] {
 			-webkit-touch-callout: none;
 			-webkit-user-select: none;
@@ -177,19 +182,19 @@
 			}, 1000);
 		}
 	    function updateWordCount() {
-	      var count = $('#data').val()
-	        .trim()
-	        .split(" ")
-	        .filter(function (word) { return word != '';})
-	        .length;
-	      $('#count').text(count);
-	    }
-	  	$(document).ready(function () {
-			$('#data').css("width","600px");
-	      updateWordCount();
-	      $('#data').keyup(function (event) {
-	        updateWordCount();
-	      });
+			var count = $('#data').val()
+				.trim()
+				.split(" ")
+				.filter(function (word) { return word != ''; })
+				.length;
+			$('#count').text(count);
+		}
+		$(document).ready(function () {
+			$('#data').css("width", "600px");
+			updateWordCount();
+			$('#data').keyup(function (event) {
+				updateWordCount();
+			});
 		});
 	</script>
 </head>
