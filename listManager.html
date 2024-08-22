@@ -100,7 +100,10 @@
 			return isCaseSensitive() ? data : data.map(d => d.toLowerCase());
 		}
 		function writeResults(processed, keepHTML) {
-			if (processed.length == 0) return;
+			if (processed.length == 0) {
+				document.getElementById('results').innerHTML = "";
+				return;
+			}
 			const resultsEl = document.getElementById('results');
 			resultsEl.style.display = "block";
 			resultsEl.innerHTML = keepHTML ? processed.join("<br/>") : processed.map(o => htmlEntities(o)).join("<br/>");
