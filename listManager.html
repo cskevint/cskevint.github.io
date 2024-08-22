@@ -37,6 +37,11 @@
 			width: 450px;
 			height: 350px;
 		}
+		textarea#function {
+			width: 550px;
+			height: 80px;
+			min-height: auto;
+		}
 
 		.red label {
 			color: red !important;
@@ -153,6 +158,13 @@
 		function reverseClick() {
 			writeResults(getData().reverse());
 		}
+		function runFunction() {
+			var mapFunction = document.getElementById("function").value;
+			var funcObject = new Function(mapFunction);
+			writeResults(getData().map((o) => { 
+				return funcObject.call(null, o);
+			}));
+		}
 	    function joinLines() {
 	      var content = document.getElementById("data").value;
 	      var joined = content.replace(/\n\n/ig, "A1B2C3D4E5");
@@ -208,6 +220,9 @@
 				<textarea id="extra" disabled></textarea>
 			</div>
 			<div>
+				<b>Function</b>: <textarea id="function">return (arguments[0] || "").split(" ").map(o => o.substring(0,1).toUpperCase() + o.substring(1).toLowerCase()).join(" ");</textarea>
+			</div>
+			<div>
 	          <b>Word count: <span id="count">0</span></b>
 			</div>
 		</form>
@@ -231,6 +246,7 @@
 		<button id="unique" class="ui button" onClick="uniqueClick()">Unique</button>
 		<button id="duplicates" class="ui button" onClick="duplicatesClick()">Duplicates</button>
 		<button id="reverse" class="ui button" onClick="reverseClick()">Reverse</button>
+		<button id="function" class="ui button" onClick="runFunction()">Run Function</button>
 		<button id="union" class="ui button" onClick="unionClick()" disabled>Union</button>
 		<button id="intersection" class="ui button" onClick="intersectionClick()" disabled>Intersection</button>
 		<button id="difference" class="ui button" onClick="differenceClick()" disabled>Difference</button>
