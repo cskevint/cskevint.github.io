@@ -202,13 +202,19 @@
 				.split(" ")
 				.filter(function (word) { return word != ''; })
 				.length;
-			$('#count').text(count);
+			$('#wordCount').text(count);
+		}
+		function updateCharCount() {
+			var count = $('#data').val().trim().length;
+			$('#charCount').text(count);
 		}
 		$(document).ready(function () {
 			$('#data').css("width", "600px");
 			updateWordCount();
+			updateCharCount();
 			$('#data').keyup(function (event) {
 				updateWordCount();
+				updateCharCount();
 			});
 		});
 	</script>
@@ -226,7 +232,8 @@
 				<b>Function</b>: <textarea id="function">return (arguments[0] || "").split(" ").map(o => o.substring(0,1).toUpperCase() + o.substring(1).toLowerCase()).join(" ");</textarea>
 			</div>
 			<div>
-	          <b>Word count: <span id="count">0</span></b>
+	          <b>Word count: <span id="wordCount">0</span></b> |
+			  <b>Character count: <span id="charCount">0</span></b>
 			</div>
 		</form>
 		<div class="ui checkbox red">
