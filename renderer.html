@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live HTML and Markdown Renderer</title>
+  <style>
+    body { font-family: sans-serif; margin: 2em; }
+    textarea { width: 100%; height: 100px; }
+    #output, #md-output { border: 1px solid #ccc; padding: 1em; margin-top: 1em; min-height: 2em; }
+  </style>
+  <!-- Add CDN for marked.js -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <h1>Live HTML and Markdown Renderer</h1>
+
+  <hr>
+
+  <div style="display: flex; gap: 2em; align-items: flex-start;">
+    <div style="flex: 1;">
+      <h2>Enter HTML below:</h2>
+      <textarea id="input" placeholder="Type HTML here..."></textarea>
+    </div>
+    <div style="flex: 1;">
+      <h2>Rendered HTML Output:</h2>
+      <div id="output"></div>
+    </div>
+  </div>
+
+  <hr>
+
+  <div style="display: flex; gap: 2em; align-items: flex-start;">
+    <div style="flex: 1;">
+      <h2>Enter Markdown below:</h2>
+      <textarea id="md-input" placeholder="Type Markdown here..."></textarea>
+    </div>
+    <div style="flex: 1;">
+      <h2>Rendered Markdown Output:</h2>
+      <div id="md-output"></div>
+    </div>
+  </div>
+
+  <script>
+    // HTML live rendering
+    const input = document.getElementById('input');
+    const output = document.getElementById('output');
+    input.addEventListener('input', function() {
+      output.innerHTML = input.value;
+    });
+
+    // Markdown live rendering
+    const mdInput = document.getElementById('md-input');
+    const mdOutput = document.getElementById('md-output');
+    mdInput.addEventListener('input', function() {
+      const processedValue = mdInput.value.replace(/\\n/g, '\n');
+      mdOutput.innerHTML = marked.parse(processedValue);
+    });
+  </script>
+</body>
+</html>
