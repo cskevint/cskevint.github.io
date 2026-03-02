@@ -1,71 +1,272 @@
-<!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>cskevint.github.com by cskevint</title>
 
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-  </head>
-  <body>
-    <div class="wrapper">
-      <header>
-        <h1>cskevint.github.com</h1>
-        <p></p>
+<head>
+	<title>List Manager</title>
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.css"
+		integrity="sha512-KXol4x3sVoO+8ZsWPFI/r5KBVB/ssCGB5tsv2nVOKwLg33wTFP3fmnXa47FdSVIshVTgsYk/1734xSk9aFIa4A=="
+		crossorigin="anonymous" referrerpolicy="no-referrer" />
+	<script src="https://code.jquery.com/jquery-3.1.1.min.js"
+		integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.js"
+		integrity="sha512-Xo0Jh8MsOn72LGV8kU5LsclG7SUzJsWGhXbWcYs2MAmChkQzwiW/yTQwdJ8w6UA9C6EVG18GHb/TrYpYCjyAQw=="
+		crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script type="text/javascript" src="https://underscorejs.org/underscore-umd-min.js"></script>
+	<style type="text/css">
+		body {
+			padding: 12px;
+		}
 
+		body,
+		textarea {
+			font-family: Tahoma;
+			font-size: 12px;
+		}
 
-        <p class="view"><a href="https://github.com/cskevint">View My GitHub Profile</a></p>
+		div {
+			margin-bottom: 6px;
+		}
 
-      </header>
-      <section>
-        <h3>Welcome to GitHub Pages.</h3>
+		textarea {
+			margin: 2px;
+		}
 
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
+		textarea#data,
+		textarea#extra {
+			width: 450px;
+			height: 350px;
+		}
+		textarea#function {
+			width: 550px;
+			height: 80px;
+			min-height: auto;
+		}
 
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
-</code></pre>
+		.red label {
+			color: red !important;
+		}
 
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
+		textarea#extra {
+			border: 1px solid red;
+		}
 
-<h3>Tools</h3>
+		textarea#extra[disabled] {
+			background-color: #dcdcdc;
+		}
 
-        <p>
-        <ul>
-          <li><a href="listManager.html">List Manager</a></li>    
-          <li><a href="wordCount.html">Word Count</a></li>    
-          <li><a href="lineJoiner.html">Line Joiner</a></li>
-          <li><a href="renderer.html">Live HTML and Markdown Renderer</li>
-        </ul>
-        </p>
-        
-<h3>Designer Templates</h3>
+		div#results {
+			border: 1px solid black;
+			display: none;
+			width: 250px;
+			padding: 2px;
+			margin: 6px 2px;
+		}
 
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
+		.checkbox label {
+			cursor: pointer !important;
+		}
 
-<h3>Rather Drive Stick?</h3>
+		#divider {
+			padding: 10px;
+			border-radius: 6px;
+		}
 
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
+		[unselectable=on] {
+			-webkit-touch-callout: none;
+			-webkit-user-select: none;
+			-khtml-user-select: none;
+			-moz-user-select: none;
+			-ms-user-select: none;
+			user-select: none;
+		}
+	</style>
+	<script type="text/javascript">
+		function htmlEntities(str) {
+			return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+		}
+		function isCaseSensitive() {
+			return document.getElementById('caseSensitive').checked;
+		}
+		function showCounts() {
+			return document.getElementById('showCounts').checked;
+		}
+		function getData() {
+			const data = document.getElementById('data').value.split("\n").filter(d => d.length > 0);
+			return isCaseSensitive() ? data : data.map(d => d.toLowerCase());
+		}
+		function getExtra() {
+			const data = document.getElementById('extra').value.split("\n").filter(d => d.length > 0);
+			return isCaseSensitive() ? data : data.map(d => d.toLowerCase());
+		}
+		function writeResults(processed, keepHTML) {
+			if (processed.length == 0) {
+				document.getElementById('results').innerHTML = "";
+				return;
+			}
+			const resultsEl = document.getElementById('results');
+			resultsEl.style.display = "block";
+			resultsEl.innerHTML = keepHTML ? processed.join("<br/>") : processed.map(o => htmlEntities(o)).join("<br/>");
+			document.getElementById('copyToClipboard').disabled = false;
+		}
+		function extraDataChange(event) {
+			document.getElementById('join').disabled = event.target.checked;
+			document.getElementById('extra').disabled = !event.target.checked;
+			document.getElementById('unique').disabled = event.target.checked;
+			document.getElementById('duplicates').disabled = event.target.checked;
+			document.getElementById('reverse').disabled = event.target.checked;
+			document.getElementById('union').disabled = !event.target.checked;
+			document.getElementById('intersection').disabled = !event.target.checked;
+			document.getElementById('difference').disabled = !event.target.checked;
+			$('#data').css("width",event.target.checked?"":"600px");
+		}
+		function uniqueClick() {
+			const counts = getData().reduce((h, k) => { h[k] = h[k] || 0; h[k]++; return h; }, {});
+			writeResults(_.pairs(counts).map(d => `${d[0]}` + (d[1] > 1 && showCounts()? ` <b>(${d[1]})</b>` : '')), true);
+		}
+		function duplicatesClick() {
+			const counts = getData().reduce((h, k) => { h[k] = h[k] || 0; h[k]++; return h; }, {});
+			writeResults(_.pairs(counts).filter(d => d[1] > 1).map(d => `${d[0]}`+ (showCounts() ? ` <b>(${d[1]})</b>` : '')), true);
+		}
+		function unionClick() {
+			writeResults(_.union(getData(), getExtra()));
+		}
+		function intersectionClick() {
+			writeResults(_.intersection(getData(), getExtra()));
+		}
+		function differenceClick() {
+			writeResults(_.difference(getData(), getExtra()));
+		}
+		function clearClick() {
+			document.getElementById('extraData').checked = false;
+			document.getElementById('caseSensitive').checked = true;
+			extraDataChange({ target: { checked: false } });
+			const resultsEl = document.getElementById('results');
+			resultsEl.style.display = "none";
+			['data', 'extra'].forEach(id => { document.getElementById(id).value = ""; })
+			document.getElementById('copyToClipboard').disabled = true;
+			updateWordCount();
+		}
+		function columnizeClick() {
+			const data = getData();
+			const results = [];
+			const divider = document.getElementById("divider").value;
+			let currentColumn = 0;
+			for (let i = 0; i < data.length; i += 2) {
+				const item = data[i];
+				results.push([data[i] && data[i], data[i + 1] && data[i + 1]].join(divider));
+			}
+			writeResults(results);
+		}
+		function reverseClick() {
+			writeResults(getData().reverse());
+		}
+		function runFunction() {
+			var mapFunction = document.getElementById("function").value;
+			var funcObject = new Function(mapFunction);
+			writeResults(getData().map((o) => { 
+				return funcObject.call(null, o);
+			}));
+		}
+	    function joinLines() {
+	      var content = document.getElementById("data").value;
+	      var joined = content.replace(/\n\n/ig, "A1B2C3D4E5");
+	      joined = joined.replace(/\n/ig, " ");
+	      joined = joined.replace(/A1B2C3D4E5/ig, "\n\n");
+	      document.getElementById("data").value = joined;
+		  navigator.clipboard.writeText(joined);
+		  const copyToClipboardEl = document.getElementById('copyToClipboard');
+		  const originalLabel = copyToClipboardEl.innerText;
+		  copyToClipboardEl.disabled = false;
+	   	  copyToClipboardEl.innerText = "Copied to Clipboard!"
+		  setTimeout(() => {
+			copyToClipboardEl.disabled = true;
+			copyToClipboardEl.innerText = originalLabel;
+		  }, 1000);
+	    }
+		function copyToClipboardClick() {
+			var textToCopy = document.getElementById("results").innerText;
+			navigator.clipboard.writeText(textToCopy);
+			const copyToClipboardEl = document.getElementById('copyToClipboard');
+			const originalLabel = copyToClipboardEl.innerText;
+			copyToClipboardEl.disabled = true;
+			copyToClipboardEl.innerText = "Copied to Clipboard!"
+			setTimeout(() => {
+				copyToClipboardEl.disabled = false;
+				copyToClipboardEl.innerText = originalLabel;
+			}, 1000);
+		}
+	    function updateWordCount() {
+			var count = $('#data').val()
+				.trim()
+				.split(" ")
+				.filter(function (word) { return word != ''; })
+				.length;
+			$('#count').text(count);
+		}
+		$(document).ready(function () {
+			$('#data').css("width", "600px");
+			updateWordCount();
+			$('#data').keyup(function (event) {
+				updateWordCount();
+			});
+		});
+	</script>
+</head>
 
-<h3>Authors and Contributors</h3>
+<body>
+	<div>
+		<form class="ui form">
+			<div class="field">
+				<label>Your data</label>
+				<textarea id="data"></textarea>
+				<textarea id="extra" disabled></textarea>
+			</div>
+			<div>
+				<b>Function</b>: <textarea id="function">return (arguments[0] || "").split(" ").map(o => o.substring(0,1).toUpperCase() + o.substring(1).toLowerCase()).join(" ");</textarea>
+			</div>
+			<div>
+	          <b>Word count: <span id="count">0</span></b>
+			</div>
+		</form>
+		<div class="ui checkbox red">
+			<input id="extraData" type="checkbox" onChange="extraDataChange(event)">
+			<label for="extraData" unselectable="on">Comparison Data</label>
+		</div>
+		<br />
+		<div class="ui checkbox">
+			<input id="caseSensitive" type="checkbox" checked>
+			<label for="caseSensitive" unselectable="on">Case Sensitive</label>
+		</div>
+		<br />
+		<div class="ui checkbox">
+			<input id="showCounts" type="checkbox">
+			<label for="showCounts" unselectable="on">Show Counts for Duplicates</label>
+		</div>
+	</div>
+	<div class="ui buttons" style="margin-bottom: 10px;">
+		<button id="join" class="ui button" onClick="joinLines()">Join</button>
+		<button id="unique" class="ui button" onClick="uniqueClick()">Unique</button>
+		<button id="duplicates" class="ui button" onClick="duplicatesClick()">Duplicates</button>
+		<button id="reverse" class="ui button" onClick="reverseClick()">Reverse</button>
+		<button id="function" class="ui button" onClick="runFunction()">Run Function</button>
+		<button id="union" class="ui button" onClick="unionClick()" disabled>Union</button>
+		<button id="intersection" class="ui button" onClick="intersectionClick()" disabled>Intersection</button>
+		<button id="difference" class="ui button" onClick="differenceClick()" disabled>Difference</button>
+		<button id="clear" class="ui primary button" onClick="clearClick()">Clear</button>
+	</div>
+	<div>
+		<div class="ui large label">Divider: </div>
+		<select id="divider" class="ui dropdown">
+			<option value="|">&nbsp;|&nbsp;</option>
+			<option value=",">&nbsp;,&nbsp;</option>
+		</select>
+		<div class="ui large label"> for </div>
+		<button id="columnize" class="ui button" onClick="columnizeClick()">Columnize by 2</button>
+		<button id="copyToClipboard" class="ui positive button" onClick="copyToClipboardClick()" disabled>Copy to
+			Clipboard</button>
+	</div>
+	<div id="results"></div>
+</body>
 
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
-
-<h3>Support or Contact</h3>
-
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
-      </section>
-      <footer>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
-      </footer>
-    </div>
-    <script src="javascripts/scale.fix.js"></script>
-    
-  </body>
 </html>
