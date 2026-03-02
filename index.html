@@ -1,272 +1,297 @@
-<html>
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
-	<title>List Manager</title>
-	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.css"
-		integrity="sha512-KXol4x3sVoO+8ZsWPFI/r5KBVB/ssCGB5tsv2nVOKwLg33wTFP3fmnXa47FdSVIshVTgsYk/1734xSk9aFIa4A=="
-		crossorigin="anonymous" referrerpolicy="no-referrer" />
-	<script src="https://code.jquery.com/jquery-3.1.1.min.js"
-		integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.js"
-		integrity="sha512-Xo0Jh8MsOn72LGV8kU5LsclG7SUzJsWGhXbWcYs2MAmChkQzwiW/yTQwdJ8w6UA9C6EVG18GHb/TrYpYCjyAQw=="
-		crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-	<script type="text/javascript" src="https://underscorejs.org/underscore-umd-min.js"></script>
-	<style type="text/css">
-		body {
-			padding: 12px;
-		}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>List Manager</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
 
-		body,
-		textarea {
-			font-family: Tahoma;
-			font-size: 12px;
-		}
+  <!-- Tailwind CSS (Play CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["Inter", "system-ui", "sans-serif"],
+            mono: ["\"JetBrains Mono\"", "Menlo", "monospace"],
+          },
+        }
+      }
+    }
+  </script>
 
-		div {
-			margin-bottom: 6px;
-		}
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-		textarea {
-			margin: 2px;
-		}
+  <!-- Underscore.js (set operations: union, intersection, difference) -->
+  <script src="https://underscorejs.org/underscore-umd-min.js"></script>
 
-		textarea#data,
-		textarea#extra {
-			width: 450px;
-			height: 350px;
-		}
-		textarea#function {
-			width: 550px;
-			height: 80px;
-			min-height: auto;
-		}
+  <style>
+    textarea { resize: vertical; }
+    textarea:focus { outline: none; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    #results b { font-weight: 700; }
+  </style>
 
-		.red label {
-			color: red !important;
-		}
+  <script>
+    /* ── Helpers ──────────────────────────────────────────── */
+    function htmlEntities(str) {
+      return String(str)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+    function isCaseSensitive() { return document.getElementById("caseSensitive").checked; }
+    function showCounts()      { return document.getElementById("showCounts").checked; }
 
-		textarea#extra {
-			border: 1px solid red;
-		}
+    function getData() {
+      const raw = document.getElementById("data").value.split("\n").filter(d => d.length > 0);
+      return isCaseSensitive() ? raw : raw.map(d => d.toLowerCase());
+    }
+    function getExtra() {
+      const raw = document.getElementById("extra").value.split("\n").filter(d => d.length > 0);
+      return isCaseSensitive() ? raw : raw.map(d => d.toLowerCase());
+    }
 
-		textarea#extra[disabled] {
-			background-color: #dcdcdc;
-		}
+    /* ── Results ──────────────────────────────────────────── */
+    function writeResults(processed, keepHTML) {
+      const el = document.getElementById("results");
+      if (!processed.length) { el.innerHTML = ""; el.classList.add("hidden"); return; }
+      el.classList.remove("hidden");
+      el.innerHTML = keepHTML
+        ? processed.join("<br/>")
+        : processed.map(o => htmlEntities(o)).join("<br/>");
+      document.getElementById("copyToClipboard").disabled = false;
+    }
 
-		div#results {
-			border: 1px solid black;
-			display: none;
-			width: 250px;
-			padding: 2px;
-			margin: 6px 2px;
-		}
+    /* ── Toggle comparison pane ───────────────────────────── */
+    function extraDataChange(checked) {
+      const extraEl   = document.getElementById("extra");
+      const extraWrap = document.getElementById("extraWrap");
+      extraEl.disabled = !checked;
+      extraWrap.classList.toggle("hidden", !checked);
+      const solo = ["join", "unique", "duplicates", "reverse"];
+      const set  = ["union", "intersection", "difference"];
+      solo.forEach(id => { document.getElementById(id).disabled = checked; });
+      set .forEach(id => { document.getElementById(id).disabled = !checked; });
+    }
 
-		.checkbox label {
-			cursor: pointer !important;
-		}
+    /* ── Operations ───────────────────────────────────────── */
+    function uniqueClick() {
+      const counts = getData().reduce((h, k) => { h[k] = (h[k] || 0) + 1; return h; }, {});
+      writeResults(_.pairs(counts).map(d =>
+        d[0] + (d[1] > 1 && showCounts() ? " <b>(" + d[1] + ")</b>" : "")), true);
+    }
+    function duplicatesClick() {
+      const counts = getData().reduce((h, k) => { h[k] = (h[k] || 0) + 1; return h; }, {});
+      writeResults(_.pairs(counts).filter(d => d[1] > 1).map(d =>
+        d[0] + (showCounts() ? " <b>(" + d[1] + ")</b>" : "")), true);
+    }
+    function unionClick()        { writeResults(_.union(getData(), getExtra())); }
+    function intersectionClick() { writeResults(_.intersection(getData(), getExtra())); }
+    function differenceClick()   { writeResults(_.difference(getData(), getExtra())); }
+    function reverseClick()      { writeResults(getData().reverse()); }
 
-		#divider {
-			padding: 10px;
-			border-radius: 6px;
-		}
+    function columnizeClick() {
+      const data    = getData();
+      const divider = document.getElementById("divider").value;
+      const results = [];
+      for (let i = 0; i < data.length; i += 2) {
+        results.push([(data[i] != null ? data[i] : ""), (data[i+1] != null ? data[i+1] : "")].join(divider));
+      }
+      writeResults(results);
+    }
 
-		[unselectable=on] {
-			-webkit-touch-callout: none;
-			-webkit-user-select: none;
-			-khtml-user-select: none;
-			-moz-user-select: none;
-			-ms-user-select: none;
-			user-select: none;
-		}
-	</style>
-	<script type="text/javascript">
-		function htmlEntities(str) {
-			return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-		}
-		function isCaseSensitive() {
-			return document.getElementById('caseSensitive').checked;
-		}
-		function showCounts() {
-			return document.getElementById('showCounts').checked;
-		}
-		function getData() {
-			const data = document.getElementById('data').value.split("\n").filter(d => d.length > 0);
-			return isCaseSensitive() ? data : data.map(d => d.toLowerCase());
-		}
-		function getExtra() {
-			const data = document.getElementById('extra').value.split("\n").filter(d => d.length > 0);
-			return isCaseSensitive() ? data : data.map(d => d.toLowerCase());
-		}
-		function writeResults(processed, keepHTML) {
-			if (processed.length == 0) {
-				document.getElementById('results').innerHTML = "";
-				return;
-			}
-			const resultsEl = document.getElementById('results');
-			resultsEl.style.display = "block";
-			resultsEl.innerHTML = keepHTML ? processed.join("<br/>") : processed.map(o => htmlEntities(o)).join("<br/>");
-			document.getElementById('copyToClipboard').disabled = false;
-		}
-		function extraDataChange(event) {
-			document.getElementById('join').disabled = event.target.checked;
-			document.getElementById('extra').disabled = !event.target.checked;
-			document.getElementById('unique').disabled = event.target.checked;
-			document.getElementById('duplicates').disabled = event.target.checked;
-			document.getElementById('reverse').disabled = event.target.checked;
-			document.getElementById('union').disabled = !event.target.checked;
-			document.getElementById('intersection').disabled = !event.target.checked;
-			document.getElementById('difference').disabled = !event.target.checked;
-			$('#data').css("width",event.target.checked?"":"600px");
-		}
-		function uniqueClick() {
-			const counts = getData().reduce((h, k) => { h[k] = h[k] || 0; h[k]++; return h; }, {});
-			writeResults(_.pairs(counts).map(d => `${d[0]}` + (d[1] > 1 && showCounts()? ` <b>(${d[1]})</b>` : '')), true);
-		}
-		function duplicatesClick() {
-			const counts = getData().reduce((h, k) => { h[k] = h[k] || 0; h[k]++; return h; }, {});
-			writeResults(_.pairs(counts).filter(d => d[1] > 1).map(d => `${d[0]}`+ (showCounts() ? ` <b>(${d[1]})</b>` : '')), true);
-		}
-		function unionClick() {
-			writeResults(_.union(getData(), getExtra()));
-		}
-		function intersectionClick() {
-			writeResults(_.intersection(getData(), getExtra()));
-		}
-		function differenceClick() {
-			writeResults(_.difference(getData(), getExtra()));
-		}
-		function clearClick() {
-			document.getElementById('extraData').checked = false;
-			document.getElementById('caseSensitive').checked = true;
-			extraDataChange({ target: { checked: false } });
-			const resultsEl = document.getElementById('results');
-			resultsEl.style.display = "none";
-			['data', 'extra'].forEach(id => { document.getElementById(id).value = ""; })
-			document.getElementById('copyToClipboard').disabled = true;
-			updateWordCount();
-		}
-		function columnizeClick() {
-			const data = getData();
-			const results = [];
-			const divider = document.getElementById("divider").value;
-			let currentColumn = 0;
-			for (let i = 0; i < data.length; i += 2) {
-				const item = data[i];
-				results.push([data[i] && data[i], data[i + 1] && data[i + 1]].join(divider));
-			}
-			writeResults(results);
-		}
-		function reverseClick() {
-			writeResults(getData().reverse());
-		}
-		function runFunction() {
-			var mapFunction = document.getElementById("function").value;
-			var funcObject = new Function(mapFunction);
-			writeResults(getData().map((o) => { 
-				return funcObject.call(null, o);
-			}));
-		}
-	    function joinLines() {
-	      var content = document.getElementById("data").value;
-	      var joined = content.replace(/\n\n/ig, "A1B2C3D4E5");
-	      joined = joined.replace(/\n/ig, " ");
-	      joined = joined.replace(/A1B2C3D4E5/ig, "\n\n");
-	      document.getElementById("data").value = joined;
-		  navigator.clipboard.writeText(joined);
-		  const copyToClipboardEl = document.getElementById('copyToClipboard');
-		  const originalLabel = copyToClipboardEl.innerText;
-		  copyToClipboardEl.disabled = false;
-	   	  copyToClipboardEl.innerText = "Copied to Clipboard!"
-		  setTimeout(() => {
-			copyToClipboardEl.disabled = true;
-			copyToClipboardEl.innerText = originalLabel;
-		  }, 1000);
-	    }
-		function copyToClipboardClick() {
-			var textToCopy = document.getElementById("results").innerText;
-			navigator.clipboard.writeText(textToCopy);
-			const copyToClipboardEl = document.getElementById('copyToClipboard');
-			const originalLabel = copyToClipboardEl.innerText;
-			copyToClipboardEl.disabled = true;
-			copyToClipboardEl.innerText = "Copied to Clipboard!"
-			setTimeout(() => {
-				copyToClipboardEl.disabled = false;
-				copyToClipboardEl.innerText = originalLabel;
-			}, 1000);
-		}
-	    function updateWordCount() {
-			var count = $('#data').val()
-				.trim()
-				.split(" ")
-				.filter(function (word) { return word != ''; })
-				.length;
-			$('#count').text(count);
-		}
-		$(document).ready(function () {
-			$('#data').css("width", "600px");
-			updateWordCount();
-			$('#data').keyup(function (event) {
-				updateWordCount();
-			});
-		});
-	</script>
+    function runFunction() {
+      const mapFunction = document.getElementById("functionCode").value;
+      const funcObject  = new Function(mapFunction);
+      writeResults(getData().map(o => funcObject.call(null, o)));
+    }
+
+    function joinLines() {
+      const ta = document.getElementById("data");
+      let joined = ta.value.replace(/\n\n/ig, "A1B2C3D4E5");
+      joined = joined.replace(/\n/ig, " ");
+      joined = joined.replace(/A1B2C3D4E5/ig, "\n\n");
+      ta.value = joined;
+      navigator.clipboard.writeText(joined);
+      flashCopyBtn(document.getElementById("copyToClipboard"), true);
+    }
+
+    function clearClick() {
+      document.getElementById("extraData").checked = false;
+      document.getElementById("caseSensitive").checked = true;
+      extraDataChange(false);
+      ["data", "extra"].forEach(id => { document.getElementById(id).value = ""; });
+      const results = document.getElementById("results");
+      results.innerHTML = "";
+      results.classList.add("hidden");
+      document.getElementById("copyToClipboard").disabled = true;
+      updateWordCount();
+    }
+
+    function copyToClipboardClick() {
+      const text = document.getElementById("results").innerText;
+      navigator.clipboard.writeText(text);
+      flashCopyBtn(document.getElementById("copyToClipboard"), false);
+    }
+
+    function flashCopyBtn(btn, keepEnabled) {
+      const orig = btn.textContent;
+      btn.disabled = !keepEnabled;
+      btn.textContent = "Copied!";
+      setTimeout(() => {
+        btn.disabled    = keepEnabled ? btn.disabled : false;
+        btn.textContent = orig;
+      }, 1200);
+    }
+
+    /* ── Word count ───────────────────────────────────────── */
+    function updateWordCount() {
+      const count = document.getElementById("data").value
+        .trim().split(/\s+/).filter(w => w !== "").length;
+      document.getElementById("count").textContent = count;
+    }
+
+    /* ── Init ─────────────────────────────────────────────── */
+    document.addEventListener("DOMContentLoaded", () => {
+      updateWordCount();
+      document.getElementById("data").addEventListener("input", updateWordCount);
+      document.getElementById("extraData").addEventListener("change", e => extraDataChange(e.target.checked));
+    });
+  </script>
 </head>
 
-<body>
-	<div>
-		<form class="ui form">
-			<div class="field">
-				<label>Your data</label>
-				<textarea id="data"></textarea>
-				<textarea id="extra" disabled></textarea>
-			</div>
-			<div>
-				<b>Function</b>: <textarea id="function">return (arguments[0] || "").split(" ").map(o => o.substring(0,1).toUpperCase() + o.substring(1).toLowerCase()).join(" ");</textarea>
-			</div>
-			<div>
-	          <b>Word count: <span id="count">0</span></b>
-			</div>
-		</form>
-		<div class="ui checkbox red">
-			<input id="extraData" type="checkbox" onChange="extraDataChange(event)">
-			<label for="extraData" unselectable="on">Comparison Data</label>
-		</div>
-		<br />
-		<div class="ui checkbox">
-			<input id="caseSensitive" type="checkbox" checked>
-			<label for="caseSensitive" unselectable="on">Case Sensitive</label>
-		</div>
-		<br />
-		<div class="ui checkbox">
-			<input id="showCounts" type="checkbox">
-			<label for="showCounts" unselectable="on">Show Counts for Duplicates</label>
-		</div>
-	</div>
-	<div class="ui buttons" style="margin-bottom: 10px;">
-		<button id="join" class="ui button" onClick="joinLines()">Join</button>
-		<button id="unique" class="ui button" onClick="uniqueClick()">Unique</button>
-		<button id="duplicates" class="ui button" onClick="duplicatesClick()">Duplicates</button>
-		<button id="reverse" class="ui button" onClick="reverseClick()">Reverse</button>
-		<button id="function" class="ui button" onClick="runFunction()">Run Function</button>
-		<button id="union" class="ui button" onClick="unionClick()" disabled>Union</button>
-		<button id="intersection" class="ui button" onClick="intersectionClick()" disabled>Intersection</button>
-		<button id="difference" class="ui button" onClick="differenceClick()" disabled>Difference</button>
-		<button id="clear" class="ui primary button" onClick="clearClick()">Clear</button>
-	</div>
-	<div>
-		<div class="ui large label">Divider: </div>
-		<select id="divider" class="ui dropdown">
-			<option value="|">&nbsp;|&nbsp;</option>
-			<option value=",">&nbsp;,&nbsp;</option>
-		</select>
-		<div class="ui large label"> for </div>
-		<button id="columnize" class="ui button" onClick="columnizeClick()">Columnize by 2</button>
-		<button id="copyToClipboard" class="ui positive button" onClick="copyToClipboardClick()" disabled>Copy to
-			Clipboard</button>
-	</div>
-	<div id="results"></div>
-</body>
+<body class="min-h-screen bg-gray-50 font-sans text-gray-800 antialiased">
 
+  <!-- ── Header ──────────────────────────────────────────── -->
+  <header class="bg-white border-b border-gray-200 px-4 py-4 sm:px-6">
+    <div class="max-w-5xl mx-auto flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-semibold text-gray-900 tracking-tight">List Manager</h1>
+        <p class="text-xs text-gray-400 mt-0.5">Transform &amp; compare text lists</p>
+      </div>
+      <span class="text-sm text-gray-500">
+        Words:&nbsp;<span id="count" class="font-semibold text-indigo-600">0</span>
+      </span>
+    </div>
+  </header>
+
+  <!-- ── Main ────────────────────────────────────────────── -->
+  <main class="max-w-5xl mx-auto px-4 py-6 sm:px-6 space-y-4">
+
+    <!-- Textareas -->
+    <div class="flex flex-col sm:flex-row gap-3">
+
+      <!-- Primary data -->
+      <textarea
+        id="data"
+        rows="14"
+        placeholder="Paste your list here (one item per line)&#8230;"
+        class="flex-1 w-full font-mono text-sm bg-white border border-gray-300 rounded-lg px-3 py-2.5
+               text-gray-800 placeholder-gray-300 shadow-sm
+               focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+      ></textarea>
+
+      <!-- Comparison data (hidden until toggled) -->
+      <div id="extraWrap" class="hidden flex-1">
+        <textarea
+          id="extra"
+          rows="14"
+          disabled
+          placeholder="Paste comparison data here&#8230;"
+          class="w-full h-full font-mono text-sm bg-white border border-rose-400 rounded-lg px-3 py-2.5
+                 text-gray-800 placeholder-rose-200 shadow-sm
+                 focus:ring-2 focus:ring-rose-400 focus:border-rose-400 transition
+                 disabled:bg-gray-100 disabled:cursor-not-allowed"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- Custom function (collapsible) -->
+    <details class="group">
+      <summary class="cursor-pointer text-xs font-medium text-gray-400 uppercase tracking-wider
+                      hover:text-gray-600 transition select-none list-none flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+        </svg>
+        Custom Function
+      </summary>
+      <textarea
+        id="functionCode"
+        rows="3"
+        class="mt-2 w-full font-mono text-sm bg-white border border-gray-300 rounded-lg px-3 py-2
+               shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+      >return (arguments[0] || "").split(" ").map(o => o.substring(0,1).toUpperCase() + o.substring(1).toLowerCase()).join(" ");</textarea>
+    </details>
+
+    <!-- Options -->
+    <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+      <label class="flex items-center gap-2 cursor-pointer group">
+        <input id="extraData" type="checkbox"
+          class="w-4 h-4 rounded border-gray-300 text-rose-500 focus:ring-rose-400 cursor-pointer">
+        <span class="text-rose-600 font-medium group-hover:text-rose-700 select-none">Comparison Data</span>
+      </label>
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input id="caseSensitive" type="checkbox" checked
+          class="w-4 h-4 rounded border-gray-300 text-indigo-500 focus:ring-indigo-400 cursor-pointer">
+        <span class="text-gray-600 select-none">Case Sensitive</span>
+      </label>
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input id="showCounts" type="checkbox"
+          class="w-4 h-4 rounded border-gray-300 text-indigo-500 focus:ring-indigo-400 cursor-pointer">
+        <span class="text-gray-600 select-none">Show Counts for Duplicates</span>
+      </label>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="flex flex-wrap items-center gap-2">
+
+      <!-- Solo operations (disabled when comparison mode is on) -->
+      <button id="join"       onclick="joinLines()"       class="btn px-3.5 py-1.5 rounded-md text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 shadow-sm active:scale-95 transition">Join Lines</button>
+      <button id="unique"     onclick="uniqueClick()"     class="btn px-3.5 py-1.5 rounded-md text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 shadow-sm active:scale-95 transition">Unique</button>
+      <button id="duplicates" onclick="duplicatesClick()" class="btn px-3.5 py-1.5 rounded-md text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 shadow-sm active:scale-95 transition">Duplicates</button>
+      <button id="reverse"    onclick="reverseClick()"    class="btn px-3.5 py-1.5 rounded-md text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 shadow-sm active:scale-95 transition">Reverse</button>
+      <button                 onclick="runFunction()"     class="btn px-3.5 py-1.5 rounded-md text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 shadow-sm active:scale-95 transition">Run Function</button>
+
+      <!-- Set operations (enabled only in comparison mode) -->
+      <button id="union"        onclick="unionClick()"        disabled class="btn px-3.5 py-1.5 rounded-md text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 shadow-sm active:scale-95 transition">Union</button>
+      <button id="intersection" onclick="intersectionClick()" disabled class="btn px-3.5 py-1.5 rounded-md text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 shadow-sm active:scale-95 transition">Intersection</button>
+      <button id="difference"   onclick="differenceClick()"   disabled class="btn px-3.5 py-1.5 rounded-md text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 shadow-sm active:scale-95 transition">Difference</button>
+
+      <!-- Divider + Columnize -->
+      <div class="flex items-center gap-1.5 border border-gray-300 rounded-md bg-white shadow-sm px-2.5 py-1">
+        <span class="text-xs text-gray-400 font-medium select-none">Divider</span>
+        <select id="divider" class="text-sm bg-transparent font-mono text-gray-700 focus:outline-none">
+          <option value="|"> | </option>
+          <option value=","> , </option>
+        </select>
+      </div>
+      <button onclick="columnizeClick()" title="Pairs up adjacent lines with the chosen divider — line 1 + line 2, line 3 + line 4, etc." class="btn px-3.5 py-1.5 rounded-md text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 shadow-sm active:scale-95 transition">Columnize &#215;2</button>
+
+      <!-- Right-aligned primary actions -->
+      <div class="ml-auto flex gap-2">
+        <button id="copyToClipboard" onclick="copyToClipboardClick()" disabled
+          class="btn px-4 py-1.5 rounded-md text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm active:scale-95 transition">
+          Copy to Clipboard
+        </button>
+        <button onclick="clearClick()"
+          class="btn px-4 py-1.5 rounded-md text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm active:scale-95 transition">
+          Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- Results output -->
+    <div id="results"
+      class="hidden font-mono text-sm bg-white border border-gray-200 rounded-lg px-4 py-3.5
+             shadow-sm leading-relaxed text-gray-800 whitespace-pre-wrap break-words
+             max-h-80 overflow-y-auto">
+    </div>
+
+  </main>
+
+</body>
 </html>
